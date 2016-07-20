@@ -1,0 +1,83 @@
+---
+title: "HomeWork9"
+author: "Harry Bhasin"
+date: "July 20, 2016"
+output:
+  html_document:
+    Keep_md: true
+---
+# Introduction
+The purpose of this assignment is to familiarize with Modeling Time Series Data. There are 2 different data set we analyze and plot them to further interrogate. In addition, we use the Seasonal and Trend Decomposition method to further analyze and plot the data set.
+
+# Specifications
+  * Assignment 1: Use Time Series to load and plot the home sales using classical decomposition and classical seasonally adjusted data.
+
+```{r}
+library(tseries)
+library(fpp) #fpp package must be installed first
+data("hsales")
+
+# Plot the time series. Can you identify seasonal fluctuations and/or a trend?
+# The fluctuation appears to be cyclic over the 10 year period
+plot(hsales)
+
+# Use a classical decomposition to calculate the trend-cycle and seasonal indices. 
+fitd <- decompose(hsales)
+
+# Do the results support the graphical interpretation from part (a)? 
+# Yes they do
+plot(fitd)
+
+# Compute and plot the seasonally adjusted data. 
+eeadj <- seasadj(fitd)
+plot(eeadj)
+
+# Change one observation to be an outlier (e.g., add 500 to one observation), and recompute the seasonally adjusted data. What is the effect of the outlier? 
+h2 <- ts(c(hsales[1:54],hsales[55]+500,hsales[56:191]),start=c(1978,1),frequency=12)
+plot(h2)
+
+# Does it make any difference if the outlier is near the end rather than in the middle of the time series? 
+# No it does not change the trend. It just moves the outlier
+h2 <- ts(c(hsales[1:89],hsales[90]+500,hsales[57:191]),start=c(1978,1),frequency=12)
+plot(h2)
+plot(hsales, col="gray", main="Sales Data", ylab="Index", xlab="")
+
+# Use STL to decompose the series. 
+fit <- stl(hsales, s.window = 5)
+lines(fit$time.series[,2], col="red", ylab="Trend")
+```
+
+# Specification
+  * Assignment 2: This assignment focuses on the volatility of financial data using "Log Returns". Log Returns are considered on daily basis and we use them because they are additive, symmetric, and matter less for smaller magnitudes with short time horizons
+```{r}
+# get the history for "ADP" and calculate the 
+ADPdata <- get.hist.quote(instrument = "adp",quote="Close")
+ADPret <- log(lag(ADPdata)) - log(ADPdata)
+
+# we will ignore the mean
+ADPvol <- sd(ADPret) * sqrt(250) * 100
+
+## Calcualting the volatility
+##  with continuous loopback window
+Vol <- function(d, logrets)
+{
+	var = 0
+	lam = 0
+	varlist <- c()
+	for (r in logrets) {
+		lam = lam*(1 - 1/d) + 1
+		# current variance
+		var = (1 - 1/lam)*var + (1/lam)*r^2
+		varlist <- c(varlist, var)
+	}
+	sqrt(varlist)
+}
+
+#
+volest <- Vol(10,ADPret)
+volest2 <- Vol(30,ADPret)
+volest3 <- Vol(100,ADPret)
+plot(volest,type="l")
+lines(volest2,type="l",col="red")
+lines(volest3, type = "l", col="blue")
+```
